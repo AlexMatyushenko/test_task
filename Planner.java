@@ -3,86 +3,59 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.*;
 
-public class Planner {
-    int temp, firstNumber, secondNumber, priority, count, size; //вспомогательные переменные
-    int dependTask; //зависящая задача
-    String s; //поочередно считываемая строка из файла
-    Map<Integer, Integer> uniqueTask; //хранит уникальные задачи и их приоритет
-    List<Integer> firstTask; //массив независящих задач
-    List<Integer> secondTask; //массив зависимых задач
+class Planner {
+    private int firstNumber, secondNumber; //вспомогательные переменные
+    private int count = 0;
+    private String s; //поочередно считываемая строка из файла
+    private List<Integer> firstTaskArray = new ArrayList<>(); //массив независящих задач
+    private List<Integer> secondTaskArray = new ArrayList<>(); //массив зависимых задач
+    private Set<Integer> uniqueTaskArray = new HashSet<>();
+    private Set<Integer> highestPriorityTasks = new HashSet<>();
 
-    public Planner() {
-        this.uniqueTask = new HashMap<>();
-        this.firstTask = new ArrayList<>();
-        this.secondTask = new ArrayList<>();
-    }
-
-    public void planTasks(String file) {
+    void planTasks(String file) {
         try (BufferedReader br = new BufferedReader(new FileReader(file))) {
             while ((s = br.readLine()) != null) {
                 String[] values = s.split(" ");
                 firstNumber = Integer.parseInt(values[0]);
                 secondNumber = Integer.parseInt(values[1]);
-                firstTask.add(firstNumber);
-                secondTask.add(secondNumber);
-                //Если записи независящей задачи нет
-                if (!uniqueTask.containsKey(firstNumber)) {
-                    uniqueTask.put(firstNumber, 0);
-                }
-                //Если записи зависящей задачи нет
-                if (!uniqueTask.containsKey(secondNumber)) {
-                    priority = uniqueTask.get(firstNumber);
-                    priority++;
-                    uniqueTask.put(secondNumber, priority);
-                }
-                //Если запись зависящей задачи есть
-                else {
-                    temp = uniqueTask.get(secondNumber);
-                    priority = uniqueTask.get(firstNumber);
-                    if (priority == temp) {
-                        priority++;
-                        uniqueTask.put(secondNumber, priority);
-                        correctFun(secondNumber, priority);
-                    }
-                }
+                firstTaskArray.add(firstNumber);
+                secondTaskArray.add(secondNumber);
+                uniqueTaskArray.add(firstNumber);
+                uniqueTaskArray.add(secondNumber);
             }
-            showResult();
         } catch (IOException exc) {
             System.out.println("Ошибка чтения файла: " + exc);
         }
-    }
 
-    //Корректировка приотетов у зависящих задач
-    private void correctFun(int task, int value) {
-        for (int i = 0; i < firstTask.size(); i++) {
-            if (firstTask.get(i) == task) {
-                dependTask = secondTask.get(i); //получаем номер зависяей задачи
-                priority = uniqueTask.get(dependTask); //получаем текущий приоритет зависящей задачи
-                if (priority <= value) {
-                    priority = value;
-                    priority++;
-                    uniqueTask.put(dependTask, priority);
-                    correctFun(dependTask, priority);
+        // Пока список уникадьных зада не пуст
+        while (uniqueTaskArray.size() > 0) {
+            //Ищем задачи высшего приоритета
+            for (Integer uniqueTask : uniqueTaskArray) {
+                count = 0;
+                for (Integer secondTask : secondTaskArray) {
+                    if (secondTask == uniqueTask) {
+                        count++;
+                        break;
+                    }
+                }
+                if (count == 0) {
+                    highestPriorityTasks.add(uniqueTask);
                 }
             }
-        }
-        return;
-    }
 
-    //Выводит результат в консоль
-    private void showResult() {
-        priority = 0;
-        count = 0;
-        size = uniqueTask.size();
-        while (count != size) {
-            for (Map.Entry<Integer, Integer> pair : uniqueTask.entrySet()) {
-                if (priority == pair.getValue()) {
-                    System.out.print(pair.getKey() + " ");
-                    count++;
+            //Очищаем коллекции от задач, высшего приоритета
+            for (Integer task : highestPriorityTasks) {
+                uniqueTaskArray.remove(task);
+                for (int i = 0; i < firstTaskArray.size(); i++) {
+                    if (firstTaskArray.get(i) == task) {
+                        firstTaskArray.remove(i);
+                        secondTaskArray.remove(i);
+                        i--;
+                    }
                 }
             }
-            System.out.println();
-            priority++;
+            System.out.println(highestPriorityTasks);
+            highestPriorityTasks.clear();
         }
     }
 }
